@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventuras no Museu Goeldi - Jogo da Memória Amazônico</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fontes Google: Fredoka & Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amazon: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            dark: '#0a2f1d'
+                        },
+                        paraense: {
+                            yellow: '#fbbf24',
+                            orange: '#f97316',
+                            red: '#ef4444',
+                            purple: '#8b5cf6',
+                            teal: '#14b8a6'
+                        }
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #0f3822 0%, #1a5235 50%, #0d2b1a 100%);
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .title-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Card 3D Flip Effects */
+        .card-container {
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .card-container.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-container.matched .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-back {
+            background: linear-gradient(145deg, #166534, #052e16);
+            border: 3px solid #fbbf24;
+            color: #fbbf24;
+        }
+
+        .card-front {
+            background: #ffffff;
+            border: 3px solid #22c55e;
+            transform: rotateY(180deg);
+        }
+
+        /* Matched pulse animation */
+        @keyframes matchedGlow {
+            0% { transform: scale(1) rotateY(180deg); box-shadow: 0 0 0px #22c55e; }
+            50% { transform: scale(1.08) rotateY(180deg); box-shadow: 0 0 20px #fbbf24; }
+            100% { transform: scale(1) rotateY(180deg); box-shadow: 0 0 5px #22c55e; }
+        }
+
+        .card-container.matched-animation {
+            animation: matchedGlow 0.6s ease-in-out forwards;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a2f1d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 4px;
+        }
+
+        /* Floating elements effect */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Speech Bubble Tail */
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 20px;
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #ffffff transparent;
+            display: block;
+            width: 0;
+        }
+    </style>
+</head>
+<body class="text-white flex flex-col min-h-screen justify-between p-2 sm:p-4 overflow-x-hidden">
+
+    <!-- Header Navigation & Title -->
+    <header class="w-full max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 bg-amazon-dark/80 backdrop-blur border border-amazon-500/30 p-3 sm:p-4 rounded-2xl shadow-xl">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 bg-paraense-yellow rounded-full flex items-center justify-center text-amazon-dark text-2xl sm:text-3xl shadow-lg border-2 border-white floating">
+                🦜
+            </div>
+            <div>
+                <h1 class="title-font text-xl sm:text-2xl md:text-3xl font-bold text-paraense-yellow tracking-wide flex items-center gap-2">
+                    Museu Goeldi <span class="text-xs sm:text-sm bg-amazon-700 text-amazon-100 px-2 py-0.5 rounded-full border border-amazon-500">Pará 🌿</span>
+                </h1>
+                <p class="text-xs sm:text-sm text-amazon-200">Aventuras na Memória Amazônica (4º e 5º Ano)</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Game Controls & Stats -->
+        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm font-semibold">
+            <div class="bg-amazon-900/90 border border-amazon-500/50 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow">
+                <i class="fa-solid fa-layer-group text-paraense-yellow"></i>
+                <span>Fase: <strong id="current-phase-label" class="text-paraense-yellow text-base">1</strong>/3</span>
+            </div>
+
+            <div class="bg-amazon-900/90 border border-amazon-500/50 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow">
+                <i class="fa-solid fa-arrow-pointer text-paraense-teal"></i>
+                <span>Jogadas: <strong id="moves-count" class="text-white text-base">0</strong></span>
+            </div>
+
+            <div class="bg-amazon-900/90 border border-amazon-500/50 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow">
+                <i class="fa-solid fa-stopwatch text-paraense-orange"></i>
+                <span id="timer-display" class="font-mono text-base text-paraense-yellow">00:00</span>
+            </div>
+
+            <button id="sound-btn" onclick="toggleSound()" class="bg-amazon-700 hover:bg-amazon-600 border border-amazon-500 p-2 rounded-xl transition shadow active:scale-95" title="Ativar/Desativar Som">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-paraense-yellow"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="w-full max-w-5xl mx-auto my-3 sm:my-5 flex-grow flex flex-col gap-4">
+
+        <!-- Character Guide Banner -->
+        <div class="bg-amazon-800/60 border border-amazon-500/40 rounded-2xl p-3 sm:p-4 flex items-start gap-3 shadow-lg relative overflow-hidden">
+            <div class="shrink-0 flex flex-col items-center">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-paraense-orange/20 border-2 border-paraense-yellow flex items-center justify-center text-3xl sm:text-4xl shadow">
+                    🧑🏽‍🌾
+                </div>
+                <span class="text-[10px] sm:text-xs font-bold text-paraense-yellow mt-1">Curica Guia</span>
+            </div>
+            
+            <div class="speech-bubble bg-white text-amazon-900 rounded-xl p-3 shadow-md text-xs sm:text-sm relative flex-grow">
+                <p id="character-speech" class="font-semibold leading-snug text-amazon-900">
+                    "É-égua, maninho! Bem-vindo ao Parque Zoobotânico Museu Paraense Emílio Goeldi! Escolha uma fase para começar a encontrar os pares e aprender sobre a nossa Amazônia!"
+                </p>
+                <div class="mt-2 flex flex-wrap gap-2 items-center justify-between text-[11px] text-amazon-700 font-bold border-t border-gray-200 pt-1">
+                    <span id="awareness-tip-short" class="italic flex items-center gap-1">
+                        <i class="fa-solid fa-leaf text-amazon-500"></i> Dica: O Museu Goeldi é um dos centros de pesquisa ecológica mais antigos do Brasil!
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Selector Tabs -->
+        <div class="flex justify-center items-center gap-2 sm:gap-4">
+            <button onclick="selectPhase(1)" id="phase-btn-1" class="phase-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-2 transition shadow-md flex items-center gap-2 bg-paraense-yellow text-amazon-dark border-paraense-yellow">
+                <i class="fa-solid fa-seedling"></i> Fase 1 (8 Peças)
+            </button>
+            <button onclick="selectPhase(2)" id="phase-btn-2" class="phase-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-2 transition shadow-md flex items-center gap-2 bg-amazon-900/80 text-amazon-200 border-amazon-600 hover:border-paraense-yellow">
+                <i class="fa-solid fa-tree"></i> Fase 2 (16 Peças)
+            </button>
+            <button onclick="selectPhase(3)" id="phase-btn-3" class="phase-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-2 transition shadow-md flex items-center gap-2 bg-amazon-900/80 text-amazon-200 border-amazon-600 hover:border-paraense-yellow">
+                <i class="fa-solid fa-water"></i> Fase 3 (36 Peças)
+            </button>
+        </div>
+
+        <!-- Card Game Board -->
+        <div class="w-full bg-amazon-dark/50 border border-amazon-500/20 rounded-2xl p-3 sm:p-5 min-h-[380px] flex items-center justify-center shadow-inner">
+            <div id="game-board" class="w-full grid gap-2 sm:gap-3 justify-center items-center">
+                <!-- Cards will be generated dynamically by JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Awareness Modal Popup (Exibido ao acertar um par) -->
+    <div id="awareness-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white text-amazon-dark rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-paraense-yellow relative transform transition-all scale-95 animate-bounce-short">
+            <button onclick="closeAwarenessModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">
+                &times;
+            </button>
+            
+            <div class="text-center">
+                <div id="modal-card-icon" class="w-20 h-20 mx-auto bg-amazon-100 rounded-full flex items-center justify-center text-5xl mb-3 shadow-inner border-2 border-amazon-500">
+                    🦜
+                </div>
+                <span class="bg-paraense-yellow/30 text-amazon-800 text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full border border-paraense-yellow">
+                    Você Descobriu!
+                </span>
+                <h3 id="modal-card-title" class="title-font text-2xl font-bold text-amazon-900 mt-2">
+                    Arara-Juba
+                </h3>
+                
+                <div class="my-4 p-4 bg-amazon-50 rounded-2xl border border-amazon-200 text-left">
+                    <p class="text-xs text-amazon-700 font-bold uppercase mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-earth-americas text-amazon-600"></i> Conscientização Amazônica:
+                    </p>
+                    <p id="modal-awareness-text" class="text-sm text-amazon-900 font-medium leading-relaxed">
+                        A Arara-Juba é uma ave amarela e verde que vive na nossa floresta. Proteger as árvores é proteger o lar delas!
+                    </p>
+                </div>
+
+                <div class="bg-amazon-900 text-paraense-yellow p-3 rounded-xl text-xs font-semibold mb-4 flex items-center gap-2 justify-center">
+                    <span>💡 "Tei! Tu é bem esperto, maninho!"</span>
+                </div>
+
+                <button onclick="closeAwarenessModal()" class="w-full py-3 bg-amazon-700 hover:bg-amazon-800 text-white font-bold rounded-xl text-base shadow-lg transition transform active:scale-95">
+                    Continuar Jogando <i class="fa-solid fa-circle-play ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Victory Modal -->
+    <div id="victory-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-amazon-800 text-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-paraense-yellow text-center relative">
+            <div class="text-6xl mb-2 floating">🏆</div>
+            <h2 class="title-font text-3xl font-extrabold text-paraense-yellow">Sensacional! Tu Arrasou!</h2>
+            <p class="text-sm text-amazon-200 mt-1" id="victory-subtitle">Você completou a fase com sucesso!</p>
+
+            <div class="grid grid-cols-2 gap-3 my-4 bg-amazon-900/80 p-4 rounded-2xl border border-amazon-600 text-sm">
+                <div class="text-center">
+                    <span class="block text-xs text-amazon-300">Jogadas</span>
+                    <strong id="victory-moves" class="text-xl text-paraense-yellow">0</strong>
+                </div>
+                <div class="text-center">
+                    <span class="block text-xs text-amazon-300">Tempo Total</span>
+                    <strong id="victory-time" class="text-xl text-paraense-yellow">00:00</strong>
+                </div>
+            </div>
+
+            <div class="p-3 bg-amazon-700/50 rounded-xl mb-5 text-xs text-amazon-100 border border-amazon-500/30">
+                <p id="victory-phrase" class="italic">
+                    "O Museu Paraense Emílio Goeldi orgulha-se dos seus pequenos defensores da Amazônia!"
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <button id="next-level-btn" onclick="nextPhase()" class="w-full py-3 bg-paraense-yellow hover:bg-amber-400 text-amazon-dark font-black rounded-xl text-base shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                    Próxima Fase <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button onclick="restartCurrentPhase()" class="w-full py-2.5 bg-amazon-700 hover:bg-amazon-600 text-white font-bold rounded-xl text-sm transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Jogar Novamente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-5xl mx-auto mt-4 text-center text-xs text-amazon-300/80 pb-2">
+        <p>Desenvolvido para Educação Infantil (4º e 5º Ano do Ensino Fundamental)</p>
+        <p class="text-[10px] text-amazon-400 mt-0.5">Parque Zoobotânico Museu Paraense Emílio Goeldi • Belém do Pará 🌳</p>
+    </footer>
+
+    <script>
+        /* ===================================================================
+           DADOS DAS CARTAS AMAZÔNICAS & PARQUE MUSEU GOELDI (18 PARES ÚNICOS)
+           =================================================================== */
+        const AMAZON_ITEMS = [
+            {
+                id: 'peixe-boi',
+                title: 'Peixe-Boi da Amazônia',
+                icon: '🐋',
+                awareness: 'O Peixe-Boi vive nos rios amazônicos e no aquário do Museu Goeldi. Devemos manter os rios limpos sem lixo plástico para ele viver feliz!'
+            },
+            {
+                id: 'arara-juba',
+                title: 'Arara-Juba',
+                icon: '🦜',
+                awareness: 'Com suas cores amarela e verde, a Arara-Juba é símbolo da nossa fauna. Proteger as florestas garante a sobrevivência desse lindo animal!'
+            },
+            {
+                id: 'vitoria-regia',
+                title: 'Vitória-Régia',
+                icon: '🪷',
+                awareness: 'Famosa planta aquática da Amazônia com folhas gigantes! Suas flores perfumadas abrem à noite. Preserve nossos lagos e igarapés!'
+            },
+            {
+                id: 'onca-pintada',
+                title: 'Onça-Pintada',
+                icon: '🐆',
+                awareness: 'O maior felino das Américas! A Onça-Pintada precisa de grandes áreas de mata preservada para caçar e cuidar de seus filhotes.'
+            },
+            {
+                id: 'jacare-acu',
+                title: 'Jacaré-Açu',
+                icon: '🐊',
+                awareness: 'O gigante dos rios paraenses! O Jacaré-Açu ajuda a manter o equilíbrio dos peixes nos rios. Respeite o habitat dos animais selvagens!'
+            },
+            {
+                id: 'castanheira',
+                title: 'Castanheira-do-Pará',
+                icon: '🌳',
+                awareness: 'Uma das maiores árvores da Amazônia! Ela nos dá a deliciosa castanha. Derrubar castanheiras é proibido por lei!'
+            },
+            {
+                id: 'macaco-cheiro',
+                title: 'Macaco-de-Cheiro',
+                icon: '🐒',
+                awareness: 'Pequenos e muito ágeis, saltam pelas árvores do Parque Goeldi. Nunca alimente animais silvestres com comida de humanos!'
+            },
+            {
+                id: 'gaviao-real',
+                title: 'Gavião-Real (Harpia)',
+                icon: '🦅',
+                awareness: 'A maior ave de rapina do Brasil! Tem garras super fortes. Ela precisa de copas de árvores bem altas para fazer seus ninhos.'
+            },
+            {
+                id: 'samauma',
+                title: 'Árvore Samaúma',
+                icon: '🌲',
+                awareness: 'Conhecida como a "Árvore da Vida" ou mãe da floresta. Suas raízes gigantes (sapopembas) servem até para comunicação na mata!'
+            },
+            {
+                id: 'boto-rosa',
+                title: 'Boto-Cor-de-Rosa',
+                icon: '🐬',
+                awareness: 'Amigo dos rios e protagonista de lendas incríveis do Pará! Proteger a água limpa é proteger a casa do Boto!'
+            },
+            {
+                id: 'pirarucu',
+                title: 'Pirarucu',
+                icon: '🐟',
+                awareness: 'O gigante das águas doces! Suas escamas são duras como armaduras. A pesca consciente garante que nunca falte pirarucu nos rios.'
+            },
+            {
+                id: 'preguica',
+                title: 'Bicho-Preguiça',
+                icon: '🦥',
+                awareness: 'Mora tranquilamente no alto das árvores do Museu Goeldi. Move-se devagar para economizar energia. Cuide da vegetação urbana!'
+            },
+            {
+                id: 'acai',
+                title: 'Açaí do Pará',
+                icon: '🫐',
+                awareness: 'O fruto da palmeira açaizeira dá energia e faz parte do orgulho paraense! Valorizar a cultura local é valorizar nossa biodiversidade.'
+            },
+            {
+                id: 'muiraquita',
+                title: 'Muiraquitã',
+                icon: '🐸',
+                awareness: 'Amuleto sagrado em forma de sapo feito de pedra verde pelos povos originários da Amazônia. Respeite a cultura dos povos indígenas!'
+            },
+            {
+                id: 'tacaca',
+                title: 'Cuia de Tacacá',
+                icon: '🥣',
+                awareness: 'Com tucupi, goma e jambu que faz a língua tremer! Prato típico feito com saberes tradicionais das florestas paraenses.'
+            },
+            {
+                id: 'carimbo',
+                title: 'Carimbó Paraense',
+                icon: '🪘',
+                awareness: 'Ritmo vibrante que celebra a natureza, os rios e a alegria do povo do Pará! A cultura e a natureza caminham juntas.'
+            },
+            {
+                id: 'tartaruga-amazonia',
+                title: 'Tartaruga-da-Amazônia',
+                icon: '🐢',
+                awareness: 'Elas botam ovos nas praias dos rios no verão. Proteger seus ninhos garante que milhares de filhotinhos cheguem ao rio!'
+            },
+            {
+                id: 'urucum',
+                title: 'Urucum',
+                icon: '🌺',
+                awareness: 'Fruto vermelho usado pelos indígenas como pintura natural e na culinária. A floresta fornece tintas e remédios naturais!'
+            }
+        ];
+
+        /* Expressões carinhosas e típicas paraenses do personagem Curica */
+        const CURICA_PHRASES = [
+            "É-égua! Tu tá achando tudo muito rápido, maninho!",
+            "Olha já! Que memória de peixe-boi afiada tu tens!",
+            "Tei! Mais um par pra conta! Tu é o verdadeiro protetor da floresta!",
+            "Hummm! Tá bonito de ver! Continue assim no Museu Goeldi!",
+            "Te acalma, respira e observa as cartas com atenção!"
+        ];
+
+        /* ===================================================================
+           ESTADO DO JOGO
+           =================================================================== */
+        let currentPhase = 1;
+        let cardsData = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let totalPairs = 4;
+        let moves = 0;
+        let gameTimer = null;
+        let secondsElapsed = 0;
+        let isLockBoard = false;
+        let isSoundOn = true;
+
+        // Audio Context (Web Audio API)
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+        }
+
+        /* Sound Synth Helpers */
+        function playSound(type) {
+            if (!isSoundOn) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'flip') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'match') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'win') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        noteGain.gain.setValueAtTime(0.2, now + idx * 0.12);
+                        noteGain.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+                        noteOsc.start(now + idx * 0.12);
+                        noteOsc.stop(now + idx * 0.12 + 0.3);
+                    });
+                }
+            } catch(e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            const icon = document.getElementById('sound-icon');
+            if (isSoundOn) {
+                icon.className = 'fa-solid fa-volume-high text-paraense-yellow';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-gray-400';
+            }
+        }
+
+        window.onload = function() {
+            startPhase(1);
+        };
+
+        function selectPhase(phaseNum) {
+            startPhase(phaseNum);
+        }
+
+        function startPhase(phaseNum) {
+            currentPhase = phaseNum;
+            document.getElementById('current-phase-label').innerText = currentPhase;
+            
+            // Update Phase Buttons UI
+            for(let i=1; i<=3; i++) {
+                const btn = document.getElementById(`phase-btn-${i}`);
+                if (i === phaseNum) {
+                    btn.className = "phase-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-2 transition shadow-md flex items-center gap-2 bg-paraense-yellow text-amazon-dark border-paraense-yellow";
+                } else {
+                    btn.className = "phase-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-2 transition shadow-md flex items-center gap-2 bg-amazon-900/80 text-amazon-200 border-amazon-600 hover:border-paraense-yellow";
+                }
+            }
+
+            // Define pair count according to phase
+            // Phase 1: 8 cards (4 pairs)
+            // Phase 2: 16 cards (8 pairs)
+            // Phase 3: 36 cards (18 pairs)
+            if (phaseNum === 1) totalPairs = 4;
+            else if (phaseNum === 2) totalPairs = 8;
+            else if (phaseNum === 3) totalPairs = 18;
+
+            moves = 0;
+            matchedPairs = 0;
+            flippedCards = [];
+            isLockBoard = false;
+            document.getElementById('moves-count').innerText = moves;
+
+            resetTimer();
+            startTimer();
+            setupBoard();
+
+            // Speech Bubble Update
+            const curicaPhrase = CURICA_PHRASES[Math.floor(Math.random() * CURICA_PHRASES.length)];
+            document.getElementById('character-speech').innerText = `"${curicaPhrase} Você está na Fase ${currentPhase} com ${totalPairs * 2} cartas!"`;
+        }
+
+        function setupBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+
+            // Grid styling based on phase & total cards
+            if (totalPairs === 4) {
+                // 8 cards -> 4 cols x 2 rows (or 2x4 on small screens)
+                board.className = "w-full grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto";
+            } else if (totalPairs === 8) {
+                // 16 cards -> 4 cols x 4 rows
+                board.className = "w-full grid grid-cols-4 gap-2 sm:gap-3 max-w-2xl mx-auto";
+            } else if (totalPairs === 18) {
+                // 36 cards -> 6 cols x 6 rows
+                board.className = "w-full grid grid-cols-4 sm:grid-cols-6 gap-1.5 sm:gap-2.5 max-w-4xl mx-auto";
+            }
+
+            // Pick pairs from AMAZON_ITEMS array
+            const selectedItems = AMAZON_ITEMS.slice(0, totalPairs);
+            let deck = [];
+
+            selectedItems.forEach(item => {
+                deck.push({ ...item, instanceId: item.id + '_1' });
+                deck.push({ ...item, instanceId: item.id + '_2' });
+            });
+
+            // Fisher-Yates Shuffle
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+
+            cardsData = deck;
+
+            // Render Card Elements
+            deck.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card-container h-24 sm:h-28 md:h-32';
+                cardEl.setAttribute('data-id', card.id);
+                cardEl.setAttribute('data-index', index);
+
+                // Responsive sizing for 36 cards
+                if (totalPairs === 18) {
+                    cardEl.className = 'card-container h-16 sm:h-20 md:h-24';
+                }
+
+                cardEl.innerHTML = `
+                    <div class="card-inner">
+                        <!-- Card Back (Covered face) -->
+                        <div class="card-back">
+                            <span class="text-xl sm:text-2xl font-bold opacity-80">🌿</span>
+                            <span class="text-[9px] sm:text-[10px] uppercase tracking-wider font-extrabold text-paraense-yellow mt-1">Goeldi</span>
+                        </div>
+                        <!-- Card Front (Uncovered face) -->
+                        <div class="card-front p-1 sm:p-2">
+                            <div class="text-2xl sm:text-3xl md:text-4xl mb-1">${card.icon}</div>
+                            <span class="text-[10px] sm:text-xs font-bold text-amazon-900 leading-tight text-center line-clamp-2">${card.title}</span>
+                        </div>
+                    </div>
+                `;
+
+                cardEl.addEventListener('click', () => handleCardClick(cardEl, card));
+                board.appendChild(cardEl);
+            });
+        }
+
+        function handleCardClick(cardEl, card) {
+            if (isLockBoard) return;
+            if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+
+            playSound('flip');
+            cardEl.classList.add('flipped');
+            flippedCards.push({ element: cardEl, data: card });
+
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves-count').innerText = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            isLockBoard = true;
+            const [card1, card2] = flippedCards;
+
+            if (card1.data.id === card2.data.id) {
+                // Match Found!
+                playSound('match');
+                card1.element.classList.add('matched', 'matched-animation');
+                card2.element.classList.add('matched', 'matched-animation');
+                
+                matchedPairs++;
+                flippedCards = [];
+                isLockBoard = false;
+
+                // Show Awareness Popup for matched pair
+                setTimeout(() => {
+                    showAwarenessModal(card1.data);
+                }, 400);
+
+            } else {
+                // Not a match
+                playSound('error');
+                setTimeout(() => {
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    flippedCards = [];
+                    isLockBoard = false;
+                }, 900);
+            }
+        }
+
+        function showAwarenessModal(item) {
+            document.getElementById('modal-card-icon').innerText = item.icon;
+            document.getElementById('modal-card-title').innerText = item.title;
+            document.getElementById('modal-awareness-text').innerText = item.awareness;
+            
+            const modal = document.getElementById('awareness-modal');
+            modal.classList.remove('hidden');
+
+            // Character speech dynamic update
+            const phrase = CURICA_PHRASES[Math.floor(Math.random() * CURICA_PHRASES.length)];
+            document.getElementById('character-speech').innerText = `"${phrase} Você descobriu: ${item.title}!"`;
+            document.getElementById('awareness-tip-short').innerHTML = `<i class="fa-solid fa-seedling text-amazon-500"></i> Dica: ${item.awareness.substring(0, 65)}...`;
+        }
+
+        function closeAwarenessModal() {
+            const modal = document.getElementById('awareness-modal');
+            modal.classList.add('hidden');
+
+            // Check if level completed after closing modal
+            if (matchedPairs === totalPairs) {
+                setTimeout(triggerVictory, 300);
+            }
+        }
+
+        function triggerVictory() {
+            stopTimer();
+            playSound('win');
+
+            document.getElementById('victory-moves').innerText = moves;
+            document.getElementById('victory-time').innerText = formatTime(secondsElapsed);
+
+            const nextBtn = document.getElementById('next-level-btn');
+            const subtitle = document.getElementById('victory-subtitle');
+
+            if (currentPhase < 3) {
+                nextBtn.classList.remove('hidden');
+                subtitle.innerText = `Você dominou a Fase ${currentPhase}! Preparado para o próximo desafio?`;
+            } else {
+                nextBtn.classList.add('hidden');
+                subtitle.innerText = "Parabéns! Tu completou TODAS as fases do Museu Goeldi! É um verdadeiro Mestre Amazônico!";
+            }
+
+            document.getElementById('victory-modal').classList.remove('hidden');
+        }
+
+        function nextPhase() {
+            document.getElementById('victory-modal').classList.add('hidden');
+            if (currentPhase < 3) {
+                startPhase(currentPhase + 1);
+            }
+        }
+
+        function restartCurrentPhase() {
+            document.getElementById('victory-modal').classList.add('hidden');
+            startPhase(currentPhase);
+        }
+
+        /* Timer utilities */
+        function startTimer() {
+            secondsElapsed = 0;
+            updateTimerDisplay();
+            gameTimer = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (gameTimer) clearInterval(gameTimer);
+        }
+
+        function resetTimer() {
+            stopTimer();
+            secondsElapsed = 0;
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timer-display').innerText = formatTime(secondsElapsed);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>
